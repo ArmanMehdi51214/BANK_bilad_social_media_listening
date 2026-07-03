@@ -1,0 +1,22 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: bank_albilad_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: bank_albilad_social_intelligence
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - bank_albilad_postgres_data:/var/lib/postgresql/data
+    networks:
+      - bank_albilad_network
+
+volumes:
+  bank_albilad_postgres_data:
+
+networks:
+  bank_albilad_network:
+    driver: bridge

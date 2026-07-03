@@ -1,0 +1,43 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+.venv/
+venv/
+env/
+
+# Environment
+.env
+.env.local
+
+# Logs
+*.log
+storage/logs/*
+!storage/logs/.gitkeep
+
+# Data / temp
+storage/temp/*
+data/raw/*
+data/processed/*
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+
+# Node / frontend
+node_modules/
+.next/
+dist/
+build/
+
+# OS / IDE
+.DS_Store
+.vscode/
+.idea/
+
+# Docker
+*.pid
+
+# Alembic
+backend/alembic/versions/*.py
+!backend/alembic/versions/.gitkeep
