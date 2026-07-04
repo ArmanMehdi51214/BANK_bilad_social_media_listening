@@ -5,6 +5,11 @@ from app.api.v1.router import api_router
 from app.core.config import settings
 from app.core.exception_handlers import register_exception_handlers
 from app.core.logging import setup_logging
+from app.modules.auth.router import router as auth_router
+from app.modules.collection.router import router as collection_router
+from app.modules.competitors.router import router as competitors_router
+from app.modules.monitoring.router import router as monitoring_router
+from app.modules.system.router import router as system_router
 
 
 def create_app() -> FastAPI:
@@ -28,6 +33,16 @@ def create_app() -> FastAPI:
     register_exception_handlers(app)
 
     app.include_router(api_router, prefix=settings.API_V1_PREFIX)
+    app.include_router(auth_router, prefix=settings.API_V1_PREFIX)
+    app.include_router(system_router, prefix=settings.API_V1_PREFIX)
+    app.include_router(monitoring_router, prefix=settings.API_V1_PREFIX)
+    app.include_router(competitors_router, prefix=settings.API_V1_PREFIX)
+
+    app.include_router(
+        collection_router,
+        prefix=f"{settings.API_V1_PREFIX}/collection",
+        tags=["Collection"],
+    )
 
     return app
 
