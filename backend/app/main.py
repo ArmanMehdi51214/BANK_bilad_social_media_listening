@@ -7,6 +7,7 @@ from app.core.exception_handlers import register_exception_handlers
 from app.core.logging import setup_logging
 from app.modules.auth.router import router as auth_router
 from app.modules.collection.router import router as collection_router
+from app.modules.ai_analysis.router import router as ai_analysis_router
 from app.modules.competitors.router import router as competitors_router
 from app.modules.monitoring.router import router as monitoring_router
 from app.modules.system.router import router as system_router
@@ -48,3 +49,5 @@ def create_app() -> FastAPI:
 
 
 app = create_app()
+
+app.include_router(ai_analysis_router, prefix=f"{settings.API_V1_PREFIX}/ai", tags=["AI Analysis"])
