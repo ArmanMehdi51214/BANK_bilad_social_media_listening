@@ -1,3 +1,4 @@
+import os
 from logging.config import fileConfig
 
 from sqlalchemy import engine_from_config
@@ -15,6 +16,13 @@ import app.models  # noqa: F401
 # from app.models.user import User
 
 config = context.config
+
+# Render/production database override.
+# Alembic must use DATABASE_URL from environment instead of local alembic.ini.
+database_url = os.getenv("DATABASE_URL")
+if database_url:
+    config.set_main_option("sqlalchemy.url", database_url)
+
 
 config.set_main_option("sqlalchemy.url", settings.database_url)
 
