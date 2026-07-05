@@ -1,3 +1,6 @@
+from app.modules.scheduler.router import router as scheduler_router
+from app.modules.scheduler.jobs import register_scheduler_jobs
+from app.modules.scheduler.manager import scheduler_manager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -51,3 +54,16 @@ def create_app() -> FastAPI:
 app = create_app()
 
 app.include_router(ai_analysis_router, prefix=f"{settings.API_V1_PREFIX}/ai", tags=["AI Analysis"])
+
+
+@app.on_event("startup")
+def start_background_scheduler() -> None:
+    register_scheduler_jobs(scheduler_manager)
+    scheduler_manager.start()
+
+
+@app.on_event("shutdown")
+def stop_background_scheduler() -> None:
+    scheduler_manager.stop(wait=False)
+
+app.include_router(scheduler_router, prefix=f"{settings.API_V1_PREFIX}/scheduler", tags=["Scheduler"])
