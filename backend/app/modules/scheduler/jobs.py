@@ -13,6 +13,7 @@ from loguru import logger
 
 from app.db.session import SessionLocal
 from app.modules.collection.service import XCollectionService
+from app.modules.ai_analysis.pipeline_runner import run_ai_pipeline_for_unprocessed
 
 
 _COLLECTION_LOCK = threading.Lock()
@@ -129,12 +130,25 @@ def run_scheduled_x_collection() -> dict[str, Any]:
         result = _resolve_maybe_async(result)
         result = _json_safe(result)
 
+        ai_pipeline_result = None
+
+        if os.getenv("SCHEDULER_RUN_AI_AFTER_COLLECTION", "true").lower() == "true":
+            if isinstance(result, dict) and result.get("status") == "success":
+                ai_limit = int(os.getenv("SCHEDULER_AI_MAX_ITEMS", "500"))
+                ai_pipeline_result = run_ai_pipeline_for_unprocessed(
+                    db=db,
+                    platform="x",
+                    limit=ai_limit,
+                    dry_run=False,
+                )
+
         response = {
             "status": "completed",
             "run_id": run_id,
             "max_items": max_items,
             "sort": sort,
             "result": result,
+            "ai_pipeline": ai_pipeline_result,
         }
 
         _RUNTIME_STATE["last_status"] = "completed"

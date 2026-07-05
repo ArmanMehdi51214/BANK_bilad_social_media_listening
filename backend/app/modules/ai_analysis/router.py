@@ -80,11 +80,20 @@ def _json_safe(value: Any) -> Any:
 
 
 def _serialize_post(post: SocialPost) -> dict:
+    external_post_id = _get_attr(post, ["external_post_id"])
+    url = _get_attr(post, ["url", "post_url", "permalink"])
+    source_url = url or (
+        f"https://x.com/i/web/status/{external_post_id}"
+        if external_post_id
+        else None
+    )
+
     return {
         "id": str(post.id),
         "platform": _get_attr(post, ["platform"]),
-        "external_post_id": _get_attr(post, ["external_post_id"]),
-        "url": _get_attr(post, ["url", "post_url", "permalink"]),
+        "external_post_id": external_post_id,
+        "url": url,
+        "source_url": source_url,
         "language": _get_attr(post, ["language", "lang"]),
         "raw_text": _get_attr(post, ["raw_text", "text"]),
         "clean_text": _get_attr(post, ["clean_text"]),
@@ -285,6 +294,7 @@ def list_ai_results(
     platform: Optional[str] = Query(default="x"),
     sentiment_label: Optional[str] = Query(default=None),
     is_complaint: Optional[bool] = Query(default=None),
+    brand_related: bool = Query(default=False),
     search: Optional[str] = Query(default=None),
     limit: int = Query(default=50, ge=1, le=500),
     offset: int = Query(default=0, ge=0),
@@ -309,6 +319,27 @@ def list_ai_results(
 
     if is_complaint is not None:
         query = query.filter(AIAnalysisResult.is_complaint.is_(is_complaint))
+
+    if brand_related:
+        brand_patterns = [
+            "%@BankAlbilad%",
+            "%bankalbilad%",
+            "%Bank Albilad%",
+            "%Albilad Bank%",
+            "%بنك البلاد%",
+            "%مصرف البلاد%",
+            "%تطبيق البلاد%",
+            "%بطاقة البلاد%",
+            "%تمويل البلاد%",
+        ]
+
+        conditions = []
+
+        for pattern in brand_patterns:
+            conditions.append(SocialPost.raw_text.ilike(pattern))
+            conditions.append(SocialPost.clean_text.ilike(pattern))
+
+        query = query.filter(or_(*conditions))
 
     if search:
         pattern = f"%{search}%"

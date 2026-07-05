@@ -46,6 +46,7 @@ export type AiResultItem = {
     platform: string;
     external_post_id: string;
     language: string | null;
+    source_url?: string | null;
     raw_text: string | null;
     clean_text: string | null;
     published_at: string | null;

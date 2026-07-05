@@ -33,8 +33,8 @@ export default function DashboardPage() {
       await Promise.all([
         getAiSummary(),
         getSchedulerStatus(),
-        getAiResults("limit=5"),
-        getAiResults("is_complaint=true&limit=5"),
+        getAiResults("brand_related=true&limit=20"),
+        getAiResults("is_complaint=true&brand_related=true&limit=5"),
         getCollectionJobs("limit=5"),
       ]);
 
@@ -141,11 +141,14 @@ export default function DashboardPage() {
         </div>
 
         <div className="grid gap-6 xl:grid-cols-2">
-          <Panel title="Latest Analyzed Posts">
+          <Panel title="Latest Bank Albilad Mentions">
             <div className="space-y-4">
-              {posts.map((item) => (
-                <PostCard key={item.post.id} item={item} />
-              ))}
+              {posts
+                .filter(isClientRelevantPost)
+                .slice(0, 5)
+                .map((item) => (
+                  <PostCard key={item.post.id} item={item} />
+                ))}
             </div>
           </Panel>
 
@@ -200,6 +203,53 @@ export default function DashboardPage() {
       </section>
     </main>
   );
+}
+
+function isClientRelevantPost(item: AiResultItem): boolean {
+  const text = `${item.post.clean_text || ""} ${item.post.raw_text || ""}`.trim();
+
+  if (text.length < 15) {
+    return false;
+  }
+
+  const isComplaint = item.analysis?.is_complaint === true;
+  if (isComplaint) {
+    return true;
+  }
+
+  const topics = item.topics.map((topic) => topic.slug);
+  const isCompetitorOnly =
+    topics.includes("competitor-discussions") &&
+    !topics.includes("complaints") &&
+    !topics.includes("customer-support") &&
+    !topics.includes("accounts") &&
+    !topics.includes("mobile-app") &&
+    !topics.includes("payments") &&
+    !topics.includes("cards") &&
+    !topics.includes("financing") &&
+    !topics.includes("loans");
+
+  if (isCompetitorOnly) {
+    return false;
+  }
+
+  const usefulBankingTopics = [
+    "customer-support",
+    "complaints",
+    "accounts",
+    "mobile-app",
+    "payments",
+    "cards",
+    "branches",
+    "atms",
+    "financing",
+    "loans",
+    "transfers",
+    "service-quality",
+    "security",
+  ];
+
+  return topics.some((topic) => usefulBankingTopics.includes(topic));
 }
 
 function Kpi({ title, value }: { title: string; value: string | number }) {
@@ -259,6 +309,17 @@ function PostCard({ item }: { item: AiResultItem }) {
           </span>
         ))}
       </div>
+
+      {item.analysis?.is_complaint && item.post.source_url ? (
+        <a
+          href={item.post.source_url}
+          target="_blank"
+          rel="noreferrer"
+          className="mt-3 inline-block text-sm font-semibold text-emerald-700 hover:underline"
+        >
+          Open original X post
+        </a>
+      ) : null}
     </div>
   );
 }

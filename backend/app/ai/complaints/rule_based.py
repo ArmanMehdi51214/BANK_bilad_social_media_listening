@@ -212,3 +212,31 @@ class BaselineArabicComplaintDetector:
             matched_terms=matched_terms,
             explanation=explanation,
         )
+
+
+# Added for M1 client-facing relevance refinement.
+EXTRA_CLIENT_COMPLAINT_TERMS = [
+    "الشكوى لديكم",
+    "الشكوى لها أسبوع",
+    "لم تحل",
+    "لم يتم حلها",
+    "عدم حلها",
+    "دون حلول",
+    "رفعت شكوى",
+    "رفع شكوى",
+    "تقديم شكوى",
+    "البنك المركزي",
+    "عدم الثقة",
+    "لا ارغب بفضحكم",
+    "راح يتم نشرها",
+    "تدليس",
+    "تكذبون",
+    "غير مقبول",
+    "تعطيل جميع عملياتي",
+    "أطالب بحل المشكلة",
+]
+
+
+def contains_client_complaint_signal(text: str) -> bool:
+    normalized = text or ""
+    return any(term in normalized for term in EXTRA_CLIENT_COMPLAINT_TERMS)
