@@ -50,6 +50,17 @@ def run_migrations_online() -> None:
     configuration = config.get_section(config.config_ini_section, {})
     configuration["sqlalchemy.url"] = settings.database_url
 
+
+    # Force Alembic to use Render/production DATABASE_URL at migration runtime.
+    # This must happen immediately before engine_from_config.
+    database_url = os.getenv("DATABASE_URL")
+    if database_url:
+        safe_prefix = database_url.split("@")[-1] if "@" in database_url else database_url[:25]
+        print(f"ALEMBIC_DATABASE_URL_ACTIVE=True host={safe_prefix}")
+        config.set_main_option("sqlalchemy.url", database_url)
+    else:
+        print("ALEMBIC_DATABASE_URL_ACTIVE=False using alembic.ini/default config")
+
     connectable = engine_from_config(
         configuration,
         prefix="sqlalchemy.",
