@@ -1,30 +1,14 @@
+from __future__ import annotations
+
 import os
 from logging.config import fileConfig
 
-from sqlalchemy import engine_from_config
-from sqlalchemy import pool
-
+from sqlalchemy import create_engine, engine_from_config, pool
 from alembic import context
 
-from app.core.config import settings
 from app.db.base import Base
-import app.models  # noqa: F401
-
-# Import models here so Alembic can detect them during autogenerate.
-# Phase 1 models will be imported here later.
-# Example:
-# from app.models.user import User
 
 config = context.config
-
-# Render/production database override.
-# Alembic must use DATABASE_URL from environment instead of local alembic.ini.
-database_url = os.getenv("DATABASE_URL")
-if database_url:
-    config.set_main_option("sqlalchemy.url", database_url)
-
-
-config.set_main_option("sqlalchemy.url", settings.database_url)
 
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
@@ -32,14 +16,18 @@ if config.config_file_name is not None:
 target_metadata = Base.metadata
 
 
+def get_database_url() -> str | None:
+    return os.getenv("DATABASE_URL")
+
+
 def run_migrations_offline() -> None:
-    url = settings.database_url
+    database_url = get_database_url() or config.get_main_option("sqlalchemy.url")
+
     context.configure(
-        url=url,
+        url=database_url,
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
-        compare_type=True,
     )
 
     with context.begin_transaction():
@@ -47,31 +35,26 @@ def run_migrations_offline() -> None:
 
 
 def run_migrations_online() -> None:
-    configuration = config.get_section(config.config_ini_section, {})
-    configuration["sqlalchemy.url"] = settings.database_url
+    database_url = get_database_url()
 
-
-    # Force Alembic to use Render/production DATABASE_URL at migration runtime.
-    # This must happen immediately before engine_from_config.
-    database_url = os.getenv("DATABASE_URL")
     if database_url:
-        safe_prefix = database_url.split("@")[-1] if "@" in database_url else database_url[:25]
-        print(f"ALEMBIC_DATABASE_URL_ACTIVE=True host={safe_prefix}")
-        config.set_main_option("sqlalchemy.url", database_url)
+        safe_host = database_url.split("@")[-1] if "@" in database_url else database_url[:30]
+        print(f"ALEMBIC_USING_ENV_DATABASE_URL=True host={safe_host}")
+        connectable = create_engine(database_url, poolclass=pool.NullPool)
     else:
-        print("ALEMBIC_DATABASE_URL_ACTIVE=False using alembic.ini/default config")
-
-    connectable = engine_from_config(
-        configuration,
-        prefix="sqlalchemy.",
-        poolclass=pool.NullPool,
-    )
+        print("ALEMBIC_USING_ENV_DATABASE_URL=False using alembic.ini")
+        connectable = engine_from_config(
+            config.get_section(config.config_ini_section, {}),
+            prefix="sqlalchemy.",
+            poolclass=pool.NullPool,
+        )
 
     with connectable.connect() as connection:
         context.configure(
             connection=connection,
             target_metadata=target_metadata,
             compare_type=True,
+            compare_server_default=True,
         )
 
         with context.begin_transaction():
