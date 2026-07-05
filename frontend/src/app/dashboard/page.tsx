@@ -27,13 +27,37 @@ export default function DashboardPage() {
   const [jobs, setJobs] = useState<CollectionJob[]>([]);
   const [loading, setLoading] = useState(true);
   const [runningNow, setRunningNow] = useState(false);
+  const [searchText, setSearchText] = useState("");
+  const [sentimentFilter, setSentimentFilter] = useState("");
+  const [complaintsOnly, setComplaintsOnly] = useState(false);
+
+  function buildPostQuery() {
+    const params = new URLSearchParams();
+
+    params.set("brand_related", "true");
+    params.set("limit", "20");
+
+    if (searchText.trim()) {
+      params.set("search", searchText.trim());
+    }
+
+    if (sentimentFilter) {
+      params.set("sentiment_label", sentimentFilter);
+    }
+
+    if (complaintsOnly) {
+      params.set("is_complaint", "true");
+    }
+
+    return params.toString();
+  }
 
   async function loadDashboard() {
     const [summaryData, schedulerData, postsData, complaintsData, jobsData] =
       await Promise.all([
         getAiSummary(),
         getSchedulerStatus(),
-        getAiResults("brand_related=true&limit=20"),
+        getAiResults(buildPostQuery()),
         getAiResults("is_complaint=true&brand_related=true&limit=5"),
         getCollectionJobs("limit=5"),
       ]);
@@ -139,6 +163,45 @@ export default function DashboardPage() {
             ))}
           </Panel>
         </div>
+
+        <Panel title="Search & Filters">
+          <div className="grid gap-4 md:grid-cols-4">
+            <input
+              value={searchText}
+              onChange={(event) => setSearchText(event.target.value)}
+              placeholder="Search Arabic text..."
+              className="rounded-lg border px-4 py-3 text-sm text-slate-900 outline-none focus:border-emerald-600 md:col-span-2"
+            />
+
+            <select
+              value={sentimentFilter}
+              onChange={(event) => setSentimentFilter(event.target.value)}
+              className="rounded-lg border px-4 py-3 text-sm text-slate-900 outline-none focus:border-emerald-600"
+            >
+              <option value="">All sentiment</option>
+              <option value="negative">Negative</option>
+              <option value="neutral">Neutral</option>
+              <option value="positive">Positive</option>
+              <option value="mixed">Mixed</option>
+            </select>
+
+            <label className="flex items-center gap-2 rounded-lg border bg-white px-4 py-3 text-sm text-slate-700">
+              <input
+                type="checkbox"
+                checked={complaintsOnly}
+                onChange={(event) => setComplaintsOnly(event.target.checked)}
+              />
+              Complaints only
+            </label>
+          </div>
+
+          <button
+            onClick={() => loadDashboard()}
+            className="mt-4 rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800"
+          >
+            Apply Filters
+          </button>
+        </Panel>
 
         <div className="grid gap-6 xl:grid-cols-2">
           <Panel title="Latest Bank Albilad Mentions">
