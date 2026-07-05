@@ -1,3 +1,4 @@
+import os
 from app.modules.scheduler.router import router as scheduler_router
 from app.modules.scheduler.jobs import register_scheduler_jobs
 from app.modules.scheduler.manager import scheduler_manager
